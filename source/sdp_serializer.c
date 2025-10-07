@@ -1,9 +1,16 @@
 /* Standard includes. */
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 /* Interface includes. */
 #include "sdp_serializer.h"
+
+/* Max value that fits in a size_t type. */
+#define sdpSIZE_MAX    ( ~( ( size_t ) 0 ) )
+
+/* Check if adding a and b will result in overflow. */
+#define sdpADD_WILL_OVERFLOW( a, b )    ( ( a ) > ( sdpSIZE_MAX - ( b ) ) )
 
 SdpResult_t SdpSerializer_Init( SdpSerializerContext_t * pCtx,
                                 char * pBuffer,
@@ -71,7 +78,15 @@ SdpResult_t SdpSerializer_AddBuffer( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -121,7 +136,15 @@ SdpResult_t SdpSerializer_AddU32( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -171,7 +194,15 @@ SdpResult_t SdpSerializer_AddU64( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -237,7 +268,15 @@ SdpResult_t SdpSerializer_AddOriginator( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -294,7 +333,15 @@ SdpResult_t SdpSerializer_AddConnectionInfo( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -348,7 +395,15 @@ SdpResult_t SdpSerializer_AddBandwidthInfo( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -402,7 +457,15 @@ SdpResult_t SdpSerializer_AddTimeActive( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -466,7 +529,15 @@ SdpResult_t SdpSerializer_AddAttribute( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 
@@ -546,7 +617,15 @@ SdpResult_t SdpSerializer_AddMedia( SdpSerializerContext_t * pCtx,
         }
         else
         {
-            pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            /* Check for overflow before incrementing currentIndex */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, ( size_t ) snprintfRetVal ) )
+            {
+                result = SDP_RESULT_MESSAGE_MALFORMED;
+            }
+            else
+            {
+                pCtx->currentIndex += ( size_t ) snprintfRetVal;
+            }
         }
     }
 

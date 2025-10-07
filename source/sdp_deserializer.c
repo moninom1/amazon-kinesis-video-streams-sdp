@@ -1,9 +1,16 @@
 /* Standard includes. */
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 /* Interface includes. */
 #include "sdp_deserializer.h"
+
+/* Max value that fits in a size_t type. */
+#define sdpSIZE_MAX    ( ~( ( size_t ) 0 ) )
+
+/* Check if adding a and b will result in overflow. */
+#define sdpADD_WILL_OVERFLOW( a, b )    ( ( a ) > ( sdpSIZE_MAX - ( b ) ) )
 
 SdpResult_t SdpDeserializer_Init( SdpDeserializerContext_t * pCtx,
                                   const char * pSdpMessage,
@@ -40,7 +47,9 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
     if( ( pCtx == NULL ) ||
         ( pType == NULL ) ||
         ( pValue == NULL ) ||
-        ( pValueLength == NULL ) )
+        ( pValueLength == NULL ) ||
+        ( pCtx->pStart == NULL ) ||
+        ( pCtx->currentIndex > pCtx->totalLength ) )
     {
         result = SDP_RESULT_BAD_PARAM;
     }
@@ -65,7 +74,16 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
 
     if( result == SDP_RESULT_OK )
     {
-        if( pCtx->pStart[ pCtx->currentIndex + 1 ] != '=' )
+        /* Check for overflow before accessing array */
+        if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, 1 ) )
+        {
+            result = SDP_RESULT_MESSAGE_MALFORMED;
+        }
+        else if( pCtx->currentIndex + 1 >= pCtx->totalLength )
+        {
+            result = SDP_RESULT_MESSAGE_MALFORMED_NOT_ENOUGH_INFO;
+        }
+        else if( pCtx->pStart[ pCtx->currentIndex + 1 ] != '=' )
         {
             result = SDP_RESULT_MESSAGE_MALFORMED_EQUAL_NOT_FOUND;
         }
@@ -73,41 +91,68 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
 
     if( result == SDP_RESULT_OK )
     {
-        for( i = pCtx->currentIndex + 2; i < pCtx->totalLength; i++ )
+        /* Check for overflow before loop start */
+        if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, 2 ) )
         {
-            if( pCtx->pStart[ i ] == '\n' )
-            {
-                break;
-            }
+            result = SDP_RESULT_MESSAGE_MALFORMED;
         }
-
-        if( i == pCtx->totalLength )
+        else
         {
-            /* No '\n' found. */
-            result = SDP_RESULT_MESSAGE_MALFORMED_NEWLINE_NOT_FOUND;
+            for( i = pCtx->currentIndex + 2; i < pCtx->totalLength; i++ )
+            {
+                if( pCtx->pStart[ i ] == '\n' )
+                {
+                    break;
+                }
+            }
+
+            if( i == pCtx->totalLength )
+            {
+                /* No '\n' found. */
+                result = SDP_RESULT_MESSAGE_MALFORMED_NEWLINE_NOT_FOUND;
+            }
         }
 
         if( result == SDP_RESULT_OK )
         {
-            if( pCtx->pStart[ i - 1 ] == '\r' )
+            /* Calculate value length based on line ending */
+            size_t offset = ( i > 0 && pCtx->pStart[ i - 1 ] == '\r' ) ? 3 : 2;
+            
+            /* Check for overflow first */
+            if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, offset ) )
             {
-                valueLength = i - pCtx->currentIndex - 3;
+                result = SDP_RESULT_MESSAGE_MALFORMED;
             }
-            else
-            {
-                valueLength = i - pCtx->currentIndex - 2;
-            }
-
-            if( valueLength > 0 )
-            {
-                *pType = pCtx->pStart[ pCtx->currentIndex ];
-                *pValue = &( pCtx->pStart[ pCtx->currentIndex + 2 ] );
-                *pValueLength = valueLength;
-                pCtx->currentIndex = pCtx->currentIndex + ( i - pCtx->currentIndex ) + 1;
-            }
-            else
+            /* Check bounds */
+            else if( i == 0 || ( i < pCtx->currentIndex + offset ) )
             {
                 result = SDP_RESULT_MESSAGE_MALFORMED_NO_VALUE;
+            }
+            else
+            {
+                valueLength = i - pCtx->currentIndex - offset;
+                
+                if( valueLength > 0 )
+                {
+                    *pType = pCtx->pStart[ pCtx->currentIndex ];
+                    *pValue = &( pCtx->pStart[ pCtx->currentIndex + 2 ] );
+                    *pValueLength = valueLength;
+                    
+                    /* Advance index safely */
+                    size_t advance = i - pCtx->currentIndex + 1;
+                    if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, advance ) )
+                    {
+                        result = SDP_RESULT_MESSAGE_MALFORMED;
+                    }
+                    else
+                    {
+                        pCtx->currentIndex += advance;
+                    }
+                }
+                else
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED_NO_VALUE;
+                }
             }
         }
     }
@@ -169,6 +214,13 @@ SdpResult_t SdpDeserializer_ParseOriginator( const char * pValue,
                     }
                     else
                     {
+                        /* Check for overflow before incrementing start */
+                        if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                        {
+                            result = SDP_RESULT_MESSAGE_MALFORMED;
+                            break;
+                        }
+                        
                         /* Skip over space. */
                         start = i + 1;
 
@@ -177,6 +229,12 @@ SdpResult_t SdpDeserializer_ParseOriginator( const char * pValue,
                     }
                 }
 
+                /* Check for overflow before incrementing start */
+                if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
+                    break;
+                }
                 start = i + 1;
             }
         }
@@ -272,6 +330,12 @@ SdpResult_t SdpDeserializer_ParseConnectionInfo( const char * pValue,
                     result = SDP_RESULT_MESSAGE_MALFORMED_REDUNDANT_INFO;
                 }
 
+                /* Check for overflow before incrementing start */
+                if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
+                    break;
+                }
                 start = i + 1;
             }
         }
@@ -319,6 +383,13 @@ SdpResult_t SdpDeserializer_ParseBandwidthInfo( const char * pValue,
                 pBandwidthInfo->pBwType = &( pValue[ 0 ] );
                 pBandwidthInfo->bwTypeLength = i;
 
+                /* Check for overflow before array access */
+                if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
+                    break;
+                }
+                
                 sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
                                        "%" SDP_PRINT_FMT_UINT64,
                                        &( pBandwidthInfo->sdpBandwidthValue ) );
@@ -375,6 +446,13 @@ SdpResult_t SdpDeserializer_ParseTimeActive( const char * pValue,
                     break;
                 }
 
+                /* Check for overflow before array access */
+                if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
+                    break;
+                }
+                
                 /* Parse stop-time. */
                 sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
                                        "%" SDP_PRINT_FMT_UINT64,
@@ -422,6 +500,13 @@ SdpResult_t SdpDeserializer_ParseAttribute( const char * pValue,
                 pAttribute->pAttributeName = &( pValue[ 0 ] );
                 pAttribute->attributeNameLength = i;
 
+                /* Check for overflow before array access and subtraction */
+                if( sdpADD_WILL_OVERFLOW( i, 1 ) || ( i + 1 > valueLength ) )
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
+                    break;
+                }
+                
                 pAttribute->pAttributeValue = &( pValue[ i + 1 ] );
                 pAttribute->attributeValueLength = valueLength - ( i + 1 );
                 break;
@@ -489,6 +574,13 @@ SdpResult_t SdpDeserializer_ParseMedia( const char * pValue,
                     {
                         if( pValue[ j ] == '/' )
                         {
+                            /* Check for overflow before array access */
+                            if( sdpADD_WILL_OVERFLOW( j, 1 ) )
+                            {
+                                result = SDP_RESULT_MESSAGE_MALFORMED;
+                                break;
+                            }
+                            
                             sscanfRetVal = sscanf( &( pValue[ j + 1 ] ),
                                                    "%" SDP_PRINT_FMT_UINT16,
                                                    &( pMedia->portNum ) );
@@ -507,11 +599,24 @@ SdpResult_t SdpDeserializer_ParseMedia( const char * pValue,
                     pMedia->pProtocol = &( pValue[ start ] );
                     pMedia->protocolLength = i - start;
 
+                    /* Check for overflow before incrementing start */
+                    if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                    {
+                        result = SDP_RESULT_MESSAGE_MALFORMED;
+                        break;
+                    }
+                    
                     /* Skip last ' ' in protocol. */
                     start = i + 1;
                     break;
                 }
 
+                /* Check for overflow before incrementing start */
+                if( sdpADD_WILL_OVERFLOW( i, 1 ) )
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
+                    break;
+                }
                 start = i + 1;
             }
         }
