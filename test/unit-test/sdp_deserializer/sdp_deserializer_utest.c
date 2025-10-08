@@ -181,6 +181,7 @@ void test_SdpDeserializer_GetNext_Incorrect_Line_Len( void )
     uint8_t type;
 
     /* Initialize serializer context. */
+    deserializerContext.pStart = deserializerBuffer;
     deserializerContext.totalLength = deserializerBufferLength;
 
     /* Each line should have atleast 3 char
@@ -190,7 +191,7 @@ void test_SdpDeserializer_GetNext_Incorrect_Line_Len( void )
     result = SdpDeserializer_GetNext( &( deserializerContext ), &( type ), &( pValue ), &( valueLength ) );
 
     TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_NOT_ENOUGH_INFO, result );
-    TEST_ASSERT_EQUAL( NULL, deserializerContext.pStart );
+    TEST_ASSERT_EQUAL( deserializerBuffer, deserializerContext.pStart );
     TEST_ASSERT_EQUAL( deserializerBufferLength, deserializerContext.totalLength );
     TEST_ASSERT_EQUAL( deserializerBufferLength - 2, deserializerContext.currentIndex );
 }
