@@ -116,7 +116,7 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
         if( result == SDP_RESULT_OK )
         {
             /* Calculate value length based on line ending */
-            size_t offset = ( i > 0 && pCtx->pStart[ i - 1 ] == '\r' ) ? 3 : 2;
+            size_t offset = ( pCtx->pStart[ i - 1 ] == '\r' ) ? 3 : 2;
             
             /* Check for overflow first */
             if( sdpADD_WILL_OVERFLOW( pCtx->currentIndex, offset ) )
@@ -124,7 +124,7 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
                 result = SDP_RESULT_MESSAGE_MALFORMED;
             }
             /* Check bounds */
-            else if( i == 0 || ( i < pCtx->currentIndex + offset ) )
+            else if( i < pCtx->currentIndex + offset )
             {
                 result = SDP_RESULT_MESSAGE_MALFORMED_NO_VALUE;
             }
