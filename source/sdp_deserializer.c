@@ -165,16 +165,13 @@ SdpResult_t SdpDeserializer_ParseOriginator( const char * pValue,
                     if( sscanfRetVal != 1 )
                     {
                         result = SDP_RESULT_MESSAGE_MALFORMED_NO_SESSION_VERSION;
-                        break;
                     }
                     else
                     {
-                        /* Skip over space. */
                         start = i + 1;
-
-                        /* break to parse connection info inside of originator. */
-                        break;
                     }
+                    /* break to parse connection info inside of originator. */
+                    break;
                 }
 
                 start = i + 1;
@@ -270,6 +267,7 @@ SdpResult_t SdpDeserializer_ParseConnectionInfo( const char * pValue,
                 else
                 {
                     result = SDP_RESULT_MESSAGE_MALFORMED_REDUNDANT_INFO;
+                    break;
                 }
 
                 start = i + 1;
@@ -300,7 +298,7 @@ SdpResult_t SdpDeserializer_ParseBandwidthInfo( const char * pValue,
 {
     SdpResult_t result = SDP_RESULT_OK;
     size_t i, numColon = 0;
-    int sscanfRetVal;
+    int sscanfRetVal = 0;
 
     /* Input check. */
     if( ( pValue == NULL ) ||
@@ -319,12 +317,20 @@ SdpResult_t SdpDeserializer_ParseBandwidthInfo( const char * pValue,
                 pBandwidthInfo->pBwType = &( pValue[ 0 ] );
                 pBandwidthInfo->bwTypeLength = i;
 
-                sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
-                                       "%" SDP_PRINT_FMT_UINT64,
-                                       &( pBandwidthInfo->sdpBandwidthValue ) );
-                if( sscanfRetVal != 1 )
+                if( ( i + 1 ) < valueLength )
                 {
-                    result = SDP_RESULT_MESSAGE_MALFORMED_INVALID_BANDWIDTH;
+                    sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
+                                           "%" SDP_PRINT_FMT_UINT64,
+                                           &( pBandwidthInfo->sdpBandwidthValue ) );
+
+                    if( sscanfRetVal != 1 )
+                    {
+                        result = SDP_RESULT_MESSAGE_MALFORMED_INVALID_BANDWIDTH;
+                    }
+                }
+                else
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
                 }
 
                 break;
@@ -347,7 +353,7 @@ SdpResult_t SdpDeserializer_ParseTimeActive( const char * pValue,
 {
     SdpResult_t result = SDP_RESULT_OK;
     size_t i, numSpaces = 0;
-    int sscanfRetVal;
+    int sscanfRetVal = 0;
 
     /* Input check. */
     if( ( pValue == NULL ) ||
@@ -376,13 +382,20 @@ SdpResult_t SdpDeserializer_ParseTimeActive( const char * pValue,
                 }
 
                 /* Parse stop-time. */
-                sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
-                                       "%" SDP_PRINT_FMT_UINT64,
-                                       &( pTimeDescription->stopTime ) );
-
-                if( sscanfRetVal != 1 )
+                if( ( i + 1 ) < valueLength )
                 {
-                    result = SDP_RESULT_MESSAGE_MALFORMED_INVALID_STOP_TIME;
+                    sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
+                                           "%" SDP_PRINT_FMT_UINT64,
+                                           &( pTimeDescription->stopTime ) );
+                    
+                    if( sscanfRetVal != 1 )
+                    {
+                        result = SDP_RESULT_MESSAGE_MALFORMED_INVALID_STOP_TIME;
+                    }
+                }
+                else
+                {
+                    result = SDP_RESULT_MESSAGE_MALFORMED;
                 }
 
                 break;
@@ -422,8 +435,16 @@ SdpResult_t SdpDeserializer_ParseAttribute( const char * pValue,
                 pAttribute->pAttributeName = &( pValue[ 0 ] );
                 pAttribute->attributeNameLength = i;
 
-                pAttribute->pAttributeValue = &( pValue[ i + 1 ] );
-                pAttribute->attributeValueLength = valueLength - ( i + 1 );
+                if( ( i + 1 ) < valueLength )
+                {
+                    pAttribute->pAttributeValue = &( pValue[ i + 1 ] );
+                    pAttribute->attributeValueLength = valueLength - ( i + 1 );
+                }
+                else
+                {
+                    pAttribute->pAttributeValue = NULL;
+                    pAttribute->attributeValueLength = 0;
+                }
                 break;
             }
         }
@@ -507,7 +528,6 @@ SdpResult_t SdpDeserializer_ParseMedia( const char * pValue,
                     pMedia->pProtocol = &( pValue[ start ] );
                     pMedia->protocolLength = i - start;
 
-                    /* Skip last ' ' in protocol. */
                     start = i + 1;
                     break;
                 }
