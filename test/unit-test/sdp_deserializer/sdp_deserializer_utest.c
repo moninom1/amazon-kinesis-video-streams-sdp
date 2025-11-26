@@ -227,7 +227,7 @@ void test_SdpDeserializer_GetNext_Incorrect_Message( void )
 /**
  * @brief The message is correct ending with '\r'.
  */
-void test_SdpDeserializer_GetNext_Incorrect_End( void )
+void test_SdpDeserializer_GetNext_Valid_End_With_CR( void )
 {
     SdpResult_t result;
     const char * pValue;
@@ -310,6 +310,34 @@ void test_SdpDeserializer_GetNext_Empty_Message( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief The message has no line ending (no \r or \n).
+ */
+void test_SdpDeserializer_GetNext_No_Line_Ending( void )
+{
+    SdpResult_t result;
+    const char * pValue;
+    size_t valueLength;
+    uint8_t type;
+    /* Message without any line ending */
+    char buffer[] = "v=2";
+    size_t inputLength = strlen( buffer );
+
+    /* Initialize serializer context. */
+    deserializerContext.pStart = buffer;
+    deserializerContext.totalLength = inputLength;
+    deserializerContext.currentIndex = 0;
+
+    result = SdpDeserializer_GetNext( &( deserializerContext ), &( type ), &( pValue ), &( valueLength ) );
+
+    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_NEWLINE_NOT_FOUND, result );
+    TEST_ASSERT_EQUAL( buffer, deserializerContext.pStart );
+    TEST_ASSERT_EQUAL( inputLength, deserializerContext.totalLength );
+    TEST_ASSERT_EQUAL( 0, deserializerContext.currentIndex );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief The message is correct ending with '\r\n''.
  */
 void test_SdpDeserializer_GetNext_Pass_n( void )
@@ -365,6 +393,68 @@ void test_SdpDeserializer_GetNext_Pass_r( void )
     TEST_ASSERT_EQUAL( buffer, deserializerContext.pStart );
     TEST_ASSERT_EQUAL( inputLength, deserializerContext.totalLength );
     TEST_ASSERT_EQUAL( inputLength, deserializerContext.currentIndex );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief The message is correct ending with '\r'.
+ */
+void test_SdpDeserializer_GetNext_Incorrect_End( void )
+{
+    SdpResult_t result;
+    const char * pValue;
+    size_t valueLength;
+    uint8_t type;
+    /* Message ending with \r only */
+    char buffer[] = "o=Jode\r";
+    size_t inputLength = strlen( buffer );
+
+    /* Initialize serializer context. */
+    deserializerContext.pStart = buffer;
+    deserializerContext.totalLength = inputLength;
+    deserializerContext.currentIndex = 0;
+
+    result = SdpDeserializer_GetNext( &( deserializerContext ), &( type ), &( pValue ), &( valueLength ) );
+
+    TEST_ASSERT_EQUAL( SDP_RESULT_OK, result );
+    TEST_ASSERT_EQUAL( SDP_TYPE_ORIGINATOR, type );
+    TEST_ASSERT_EQUAL( 4, valueLength );
+    TEST_ASSERT_EQUAL_STRING_LEN( "Jode", pValue, valueLength );
+    TEST_ASSERT_EQUAL( buffer, deserializerContext.pStart );
+    TEST_ASSERT_EQUAL( inputLength, deserializerContext.totalLength );
+    TEST_ASSERT_EQUAL( inputLength, deserializerContext.currentIndex );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief The message has \r followed by non-\n character.
+ */
+void test_SdpDeserializer_GetNext_r_followed_by_non_n( void )
+{
+    SdpResult_t result;
+    const char * pValue;
+    size_t valueLength;
+    uint8_t type;
+    /* Message with \r followed by 'x' instead of \n */
+    char buffer[] = "v=2\rx";
+    size_t inputLength = strlen( buffer );
+
+    /* Initialize serializer context. */
+    deserializerContext.pStart = buffer;
+    deserializerContext.totalLength = inputLength;
+    deserializerContext.currentIndex = 0;
+
+    result = SdpDeserializer_GetNext( &( deserializerContext ), &( type ), &( pValue ), &( valueLength ) );
+
+    TEST_ASSERT_EQUAL( SDP_RESULT_OK, result );
+    TEST_ASSERT_EQUAL( SDP_TYPE_VERSION, type );
+    TEST_ASSERT_EQUAL( 1, valueLength );
+    TEST_ASSERT_EQUAL_STRING_LEN( "2", pValue, valueLength );
+    TEST_ASSERT_EQUAL( buffer, deserializerContext.pStart );
+    TEST_ASSERT_EQUAL( inputLength, deserializerContext.totalLength );
+    TEST_ASSERT_EQUAL( 4, deserializerContext.currentIndex ); /* Should skip only \r, not \rx */
 }
 
 /*-----------------------------------------------------------*/
