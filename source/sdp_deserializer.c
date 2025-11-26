@@ -75,7 +75,8 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
     {
         for( i = pCtx->currentIndex + 2; i < pCtx->totalLength; i++ )
         {
-            if( pCtx->pStart[ i ] == '\n' )
+            if( ( pCtx->pStart[ i ] == '\n' ) ||
+                ( pCtx->pStart[ i ] == '\r' ) )
             {
                 break;
             }
@@ -83,27 +84,32 @@ SdpResult_t SdpDeserializer_GetNext( SdpDeserializerContext_t * pCtx,
 
         if( i == pCtx->totalLength )
         {
-            /* No '\n' found. */
+            /* No '\n' or '\r' found. */
             result = SDP_RESULT_MESSAGE_MALFORMED_NEWLINE_NOT_FOUND;
         }
 
         if( result == SDP_RESULT_OK )
         {
-            if( pCtx->pStart[ i - 1 ] == '\r' )
-            {
-                valueLength = i - pCtx->currentIndex - 3;
-            }
-            else
-            {
-                valueLength = i - pCtx->currentIndex - 2;
-            }
+            valueLength = i - pCtx->currentIndex - 2;
 
             if( valueLength > 0 )
             {
                 *pType = pCtx->pStart[ pCtx->currentIndex ];
                 *pValue = &( pCtx->pStart[ pCtx->currentIndex + 2 ] );
                 *pValueLength = valueLength;
-                pCtx->currentIndex = pCtx->currentIndex + ( i - pCtx->currentIndex ) + 1;
+
+                if( ( pCtx->pStart[ i ] == '\r' ) &&
+                    ( i + 1 < pCtx->totalLength ) &&
+                    ( pCtx->pStart[ i + 1 ] == '\n' ) )
+                {
+                    /* Skip \r\n */
+                    pCtx->currentIndex = i + 2;
+                }
+                else
+                {
+                    /* Skip \r or \n */
+                    pCtx->currentIndex = i + 1;
+                }
             }
             else
             {

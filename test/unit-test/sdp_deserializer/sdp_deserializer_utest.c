@@ -225,7 +225,7 @@ void test_SdpDeserializer_GetNext_Incorrect_Message( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief The message is malformed message ending without '\n'.
+ * @brief The message is correct ending with '\r'.
  */
 void test_SdpDeserializer_GetNext_Incorrect_End( void )
 {
@@ -233,7 +233,7 @@ void test_SdpDeserializer_GetNext_Incorrect_End( void )
     const char * pValue;
     size_t valueLength;
     uint8_t type;
-    /* Incorrect message without \n*/
+    /* Message ending with \r only */
     char buffer[] = "o=Jode\r";
     size_t inputLength = strlen( buffer );
 
@@ -244,10 +244,13 @@ void test_SdpDeserializer_GetNext_Incorrect_End( void )
 
     result = SdpDeserializer_GetNext( &( deserializerContext ), &( type ), &( pValue ), &( valueLength ) );
 
-    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_NEWLINE_NOT_FOUND, result );
+    TEST_ASSERT_EQUAL( SDP_RESULT_OK, result );
+    TEST_ASSERT_EQUAL( SDP_TYPE_ORIGINATOR, type );
+    TEST_ASSERT_EQUAL( 4, valueLength );
+    TEST_ASSERT_EQUAL_STRING_LEN( "Jode", pValue, valueLength );
     TEST_ASSERT_EQUAL( buffer, deserializerContext.pStart );
     TEST_ASSERT_EQUAL( inputLength, deserializerContext.totalLength );
-    TEST_ASSERT_EQUAL( 0, deserializerContext.currentIndex );
+    TEST_ASSERT_EQUAL( inputLength, deserializerContext.currentIndex );
 }
 
 /*-----------------------------------------------------------*/
