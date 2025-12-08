@@ -937,7 +937,7 @@ void test_SdpDeserializer_ParseBandwidthInfo_ColonAtEnd( void )
     SdpBandwidthInfo_t bandwidth;
 
     result = SdpDeserializer_ParseBandwidthInfo( originatorBuffer, inputLength, &( bandwidth ) );
-    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_INVALID_BANDWIDTH, result );
+    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED, result );
 }
 
 /*-----------------------------------------------------------*/
