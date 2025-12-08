@@ -953,7 +953,7 @@ void test_SdpDeserializer_ParseBandwidthInfo_EmptyBandwidthModifier( void )
     SdpBandwidthInfo_t bandwidth;
 
     result = SdpDeserializer_ParseBandwidthInfo( originatorBuffer, inputLength, &( bandwidth ) );
-    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_INVALID_BANDWIDTH, result );
+    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_NOT_ENOUGH_INFO, result );
 }
 
 /*-----------------------------------------------------------*/
@@ -971,7 +971,7 @@ void test_SdpDeserializer_ParseBandwidthInfo_ColonAtPositionZero( void )
     memset( &( bandwidth ), 0, sizeof( SdpBandwidthInfo_t ) );
 
     result = SdpDeserializer_ParseBandwidthInfo( originatorBuffer, inputLength, &( bandwidth ) );
-    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_INVALID_BANDWIDTH, result );
+    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_NOT_ENOUGH_INFO, result );
 }
 
 /*-----------------------------------------------------------*/

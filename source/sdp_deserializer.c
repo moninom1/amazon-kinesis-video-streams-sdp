@@ -323,15 +323,14 @@ SdpResult_t SdpDeserializer_ParseBandwidthInfo( const char * pValue,
 
                 if( i == 0 )
                 {
-                    result = SDP_RESULT_MESSAGE_MALFORMED_INVALID_BANDWIDTH;
+                    result = SDP_RESULT_MESSAGE_MALFORMED_NOT_ENOUGH_INFO;
+                    break;
                 }
-                else
-                {
 
-                    pBandwidthInfo->pBwType = &( pValue[ 0 ] );
-                    pBandwidthInfo->bwTypeLength = i;
+                pBandwidthInfo->pBwType = &( pValue[ 0 ] );
+                pBandwidthInfo->bwTypeLength = i;
 
-                    if( ( i + 1 ) < valueLength )
+                if( ( i + 1 ) < valueLength )
                 {
                     sscanfRetVal = sscanf( &( pValue[ i + 1 ] ),
                                            "%" SDP_PRINT_FMT_UINT64,
@@ -345,7 +344,6 @@ SdpResult_t SdpDeserializer_ParseBandwidthInfo( const char * pValue,
                 else
                 {
                     result = SDP_RESULT_MESSAGE_MALFORMED;
-                }
                 }
 
                 break;
