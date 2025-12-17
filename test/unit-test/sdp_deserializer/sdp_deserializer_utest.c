@@ -943,22 +943,6 @@ void test_SdpDeserializer_ParseBandwidthInfo_ColonAtEnd( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief The message is malformed with empty bandwidth modifier.
- */
-void test_SdpDeserializer_ParseBandwidthInfo_EmptyBandwidthModifier( void )
-{
-    SdpResult_t result;
-    char originatorBuffer[] =":128";
-    size_t inputLength = strlen( originatorBuffer );
-    SdpBandwidthInfo_t bandwidth;
-
-    result = SdpDeserializer_ParseBandwidthInfo( originatorBuffer, inputLength, &( bandwidth ) );
-    TEST_ASSERT_EQUAL( SDP_RESULT_MESSAGE_MALFORMED_NOT_ENOUGH_INFO, result );
-}
-
-/*-----------------------------------------------------------*/
-
-/**
  * @brief The message is malformed with colon at position zero.
  */
 void test_SdpDeserializer_ParseBandwidthInfo_ColonAtPositionZero( void )
